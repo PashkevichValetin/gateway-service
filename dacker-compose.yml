@@ -1,0 +1,3 @@
+gateway:
+  build: ./gateway
+  container_name:
