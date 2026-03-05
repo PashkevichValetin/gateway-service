@@ -57,7 +57,7 @@ public class GatewayConfig {
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(exchange -> exchange.getRequest().getRemoteAddress() != null ?
                                                 Mono.just(exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()) :
-                                                Mono.just("unkniwn")))
+                                                Mono.just("unknown")))
                                 .stripPrefix(1))
                         .uri("lb://reactor-adapter-service"))
                 .route("monitoring", r -> r
@@ -69,11 +69,11 @@ public class GatewayConfig {
                                 .stripPrefix(1))
                         .uri("lb://monitoring-service"))
                 .route("public", r -> r
-                        .path("/api/public/**", "/actuator/heakth", "actuator/info")
+                        .path("/api/public/**", "/actuator/heakth", "/actuator/info")
                         .filters(f -> f
                                 .filter(correlationIdFilter.apply(new CorrelationIdFilter.Config()))
                                 .filter(loggingFilter.apply(new LoggingFilter.Config())))
-                        .uri("no://op"))
+                        .uri("forward:/"))
                 .route("auth", r -> r
                         .path("/api/auth/**")
                         .uri("lb://keycloak"))

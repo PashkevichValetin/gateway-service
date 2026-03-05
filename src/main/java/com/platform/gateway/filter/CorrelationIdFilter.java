@@ -21,6 +21,7 @@ public class CorrelationIdFilter extends AbstractGatewayFilterFactory<Correlatio
                 correlationId = UUID.randomUUID().toString();
             }
 
+            // Устанавливаем заголовок в запросе и ответе
             exchange = exchange.mutate()
                     .request(exchange.getRequest().mutate()
                             .header(CORRELATION_ID_HEADER, correlationId)

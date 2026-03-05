@@ -1,17 +1,24 @@
 package com.platform.gateway.filter;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
 @Component
+@Slf4j
 public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Config> {
 
-    public JwtAuthFilter() {
+    private final ReactiveJwtDecoder jwtDecoder;
+
+    @Autowired
+    public JwtAuthFilter(ReactiveJwtDecoder jwtDecoder) {
         super(Config.class);
+        this.jwtDecoder = jwtDecoder;
     }
 
     @Override
@@ -19,21 +26,25 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
         return (exchange, chain) -> {
             String path = exchange.getRequest().getURI().getPath();
 
-            // Пропускаем публичные пути
             if (isPublicPath(path)) {
                 return chain.filter(exchange);
             }
 
-            // Проверяем наличие токена
             String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
-
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 return exchange.getResponse().setComplete();
             }
 
-            // Токен есть, передаем дальше
-            return chain.filter(exchange);
+            String token = authHeader.substring(7);
+
+            return jwtDecoder.decode(token)
+                    .flatMap(jwt -> chain.filter(exchange))
+                    .onErrorResume(e -> {
+                        log.warn("JWT validation failed: {}", e .getMessage());
+                        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                        return exchange.getResponse().setComplete();
+                    });
         };
     }
 
@@ -45,6 +56,6 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     }
 
     public static class Config {
-        // Конфигурация фильтра
+
     }
 }

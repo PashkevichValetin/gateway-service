@@ -14,7 +14,14 @@ import java.util.Map;
 @Service
 public class TokenService {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final Key key;
+
+    @Value("${jwt.secret}")
+    private String secret;
+
+    public TokenService() {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+    }
 
     @Value("${jwt.expiration:3600000}")
     private long expiration;

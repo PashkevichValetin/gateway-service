@@ -1,5 +1,6 @@
 package com.platform.gateway.filter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import java.time.Duration;
 
+@Slf4j
 @Component
 public class RateLimitingFilter extends AbstractGatewayFilterFactory<RateLimitingFilter.Config> {
 
@@ -39,6 +41,10 @@ public class RateLimitingFilter extends AbstractGatewayFilterFactory<RateLimitin
                             exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
                             return exchange.getResponse().setComplete();
                         }
+                        return chain.filter(exchange);
+                    })
+                    .onErrorResume(e -> {
+                        log.warn("Rate limiting failed due to Redis error: {}", e.getMessage());
                         return chain.filter(exchange);
                     });
         };
