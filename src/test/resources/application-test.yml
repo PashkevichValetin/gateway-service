@@ -1,0 +1,53 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: gateway-test
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 30s
+      httpserver:
+        max-initial-line-length: 4096
+        max-header-size: 8192
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/platform
+          jwk-set-uri: http://localhost:8080/realms/platform/protocol/openid-connect/certs
+
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+
+jwt:
+  expiration: 3600000
+  secret: testSecretKey1234567890
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      dataUnifierCB:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+      stocksCB:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
