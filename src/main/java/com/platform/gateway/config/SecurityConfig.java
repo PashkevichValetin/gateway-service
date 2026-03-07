@@ -17,7 +17,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain filterChain(ServerHttpSecurity http) {  // <-- ИСПРАВЛЕНО: другое имя метода
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
@@ -47,18 +47,10 @@ public class SecurityConfig {
         corsConfig.setAllowCredentials(true);
         corsConfig.setMaxAge(3600L);
 
-        CorsConfigurationSource source = request -> {
-            return corsConfig;
-        };
-
+        CorsConfigurationSource source = request -> corsConfig;
         return new CorsWebFilter(source);
     }
-
 }
-
-
-
-
 
 
 

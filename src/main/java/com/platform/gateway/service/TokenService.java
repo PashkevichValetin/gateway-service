@@ -1,7 +1,6 @@
 package com.platform.gateway.service;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,15 +15,13 @@ public class TokenService {
 
     private final Key key;
 
-    @Value("${jwt.secret}")
-    private String secret;
-
-    public TokenService() {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
-    }
-
     @Value("${jwt.expiration:3600000}")
     private long expiration;
+
+    public TokenService(String secret) {
+        byte[] keyBytes = secret.getBytes();
+        this.key = Keys.hmacShaKeyFor(keyBytes);
+    }
 
     public Mono<String> generateToken(String username, Map<String, Object> claims) {
         return Mono.fromCallable(() ->
