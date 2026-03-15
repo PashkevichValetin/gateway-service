@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,20 +17,22 @@ class TokenServiceTest {
 
     private TokenService tokenService;
     private final String testSecret = "myTestSecretKeyForJUnitTests12345678901234567890";
+    private final long expirationMs = 3600000L;
 
     @BeforeEach
     void setUp() {
         tokenService = new TokenService(testSecret);
-
-        // Если нужно изменить expiration через рефлексию
-        ReflectionTestUtils.setField(tokenService, "expiration", 3600000L);
+        ReflectionTestUtils.setField(tokenService, "expiration", expirationMs);
     }
 
     @Test
     void generateToken_ShouldReturnValidToken() {
         // GIVEN
         String username = "testuser";
-        Map<String, Object> claims = Map.of("role", "USER");
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", "USER");
+        claims.put("userId", "12345");
+        claims.put("email", "test@example.com");
 
         // WHEN
         String token = tokenService.generateToken(username, claims).block();
