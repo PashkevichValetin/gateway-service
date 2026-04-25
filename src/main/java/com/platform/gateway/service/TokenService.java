@@ -43,7 +43,7 @@ public class TokenService {
             } catch (Exception e) {
                 return false;
             }
-        });
+        }).onErrorReturn(false); // Возвращаем false в случае ошибки
     }
 
     public Mono<String> extractUsername(String token) {
@@ -54,6 +54,6 @@ public class TokenService {
                         .parseClaimsJws(token)
                         .getBody()
                         .getSubject()
-        );
+        ).onErrorResume(e -> Mono.error(new RuntimeException("Invalid token", e)));
     }
 }

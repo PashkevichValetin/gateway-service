@@ -44,7 +44,7 @@ public class RateLimitingFilter extends AbstractGatewayFilterFactory<RateLimitin
                         return chain.filter(exchange);
                     })
                     .onErrorResume(e -> {
-                        log.warn("Rate limiting failed due to Redis error: {}", e.getMessage());
+                        log.warn("Rate limiting failed due to Redis error for IP {}: {}", clientIp, e.getMessage());
                         return chain.filter(exchange);
                     });
         };
