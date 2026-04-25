@@ -1,12 +1,14 @@
 package com.platform.gateway.filter;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @Slf4j
@@ -14,7 +16,6 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
 
     private final ReactiveJwtDecoder jwtDecoder;
 
-    @Autowired
     public JwtAuthFilter(ReactiveJwtDecoder jwtDecoder) {
         super(Config.class);
         this.jwtDecoder = jwtDecoder;
@@ -40,7 +41,7 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
             return jwtDecoder.decode(token)
                     .flatMap(jwt -> chain.filter(exchange))
                     .onErrorResume(e -> {
-                        log.warn("JWT validation failed: {}", e.getMessage());
+                        log.warn("JWT validation failed for path {}: {}", path, e.getMessage());
                         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                         return exchange.getResponse().setComplete();
                     });
@@ -48,10 +49,13 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     }
 
     private boolean isPublicPath(String path) {
-        return path.startsWith("/actuator/health") ||
-                path.startsWith("/actuator/info") ||
-                path.startsWith("/api/public") ||
-                path.startsWith("/api/auth");
+        List<String> publicPaths = Arrays.asList(
+                "/actuator/health",
+                "/actuator/info",
+                "/api/public",
+                "/api/auth"
+        );
+        return publicPaths.stream().anyMatch(path::startsWith);
     }
 
     public static class Config {
