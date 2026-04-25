@@ -51,6 +51,5 @@ public class RateLimitingFilter extends AbstractGatewayFilterFactory<RateLimitin
     }
 
     public static class Config {
-
     }
 }

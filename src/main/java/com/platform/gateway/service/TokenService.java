@@ -18,7 +18,7 @@ public class TokenService {
     @Value("${jwt.expiration:3600000}")
     private long expiration;
 
-    public TokenService(String secret) {
+    public TokenService(@Value("${jwt.secret:secret}") String secret) {
         byte[] keyBytes = secret.getBytes();
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }

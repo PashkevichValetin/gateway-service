@@ -21,15 +21,14 @@ public class RedisConfig {
 
     @Bean
     public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory() {
-
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(redisHost, redisPort);
         return new LettuceConnectionFactory(config);
     }
 
     @Bean
     public ReactiveRedisTemplate<String, String> reactiveRedisTemplate(ReactiveRedisConnectionFactory factory) {
-        RedisSerializationContext<String, String> serializationContext = RedisSerializationContext.<String,
-                String>newSerializationContext(new StringRedisSerializer())
+        RedisSerializationContext<String, String> serializationContext = RedisSerializationContext.<String, String>newSerializationContext(new
+                        StringRedisSerializer())
                 .key(new StringRedisSerializer())
                 .value(new StringRedisSerializer())
                 .hashKey(new StringRedisSerializer())

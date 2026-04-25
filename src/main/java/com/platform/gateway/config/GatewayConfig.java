@@ -26,7 +26,6 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // Data Unifier Service
                 .route("data-unifier", r -> r
                         .path("/api/v1/unifier/**")
                         .filters(f -> f
@@ -69,7 +68,7 @@ public class GatewayConfig {
                                 .stripPrefix(1))
                         .uri("lb://monitoring-service"))
                 .route("public", r -> r
-                        .path("/api/public/**", "/actuator/heakth", "/actuator/info")
+                        .path("/api/public/**", "/actuator/health", "/actuator/info")
                         .filters(f -> f
                                 .filter(correlationIdFilter.apply(new CorrelationIdFilter.Config()))
                                 .filter(loggingFilter.apply(new LoggingFilter.Config())))

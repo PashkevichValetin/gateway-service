@@ -1,6 +1,5 @@
 package com.platform.gateway.filter;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -41,7 +40,7 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
             return jwtDecoder.decode(token)
                     .flatMap(jwt -> chain.filter(exchange))
                     .onErrorResume(e -> {
-                        log.warn("JWT validation failed: {}", e .getMessage());
+                        log.warn("JWT validation failed: {}", e.getMessage());
                         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                         return exchange.getResponse().setComplete();
                     });
@@ -56,6 +55,5 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     }
 
     public static class Config {
-
     }
 }

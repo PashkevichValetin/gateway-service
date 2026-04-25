@@ -17,7 +17,6 @@ public class LoggingFilter extends AbstractGatewayFilterFactory<LoggingFilter.Co
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            // Делаем все переменные final или effectively final
             final long startTime = System.currentTimeMillis();
 
             String correlationId = exchange.getRequest().getHeaders().getFirst("X-Correlation-ID");
