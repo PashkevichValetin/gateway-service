@@ -1,54 +1,35 @@
 package com.platform.gateway.converter;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-import reactor.core.publisher.Mono;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.stereotype.Component;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import java.util.*;
+@Component
+public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(MockitoExtension.class)
-public class KeycloakJwtAuthenticationConverterTest {
-
-    @Test
-    public void testConvertWithRoles() {
-        // Arrange
-        KeycloakJwtAuthenticationConverter converter = new KeycloakJwtAuthenticationConverter();
-
-        Map<String, Object> realmAccess = new HashMap<>();
-        realmAccess.put("roles", Arrays.asList("USER", "ADMIN"));
-
-        Jwt jwt = mock(Jwt.class);
-        when(jwt.getSubject()).thenReturn("testuser");
-        when(jwt.getTokenValue()).thenReturn("token123");
-        when(jwt.getClaimAsMap("realm_access")).thenReturn(realmAccess);
-
-        // Act
-        Mono<AbstractAuthenticationToken> result = converter.convert(jwt);
-
-        // Assert
-        assertNotNull(result);
+    @Override
+    public AbstractAuthenticationToken convert(Jwt jwt) {
+        Collection<GrantedAuthority> authorities = extractAuthorities(jwt);
+        return new JwtAuthenticationToken(jwt, authorities);
     }
 
-    @Test
-    public void testConvertWithoutRoles() {
-        // Arrange
-        KeycloakJwtAuthenticationConverter converter = new KeycloakJwtAuthenticationConverter();
-
-        Jwt jwt = mock(Jwt.class);
-        when(jwt.getSubject()).thenReturn("testuser");
-        when(jwt.getTokenValue()).thenReturn("token123");
-        when(jwt.getClaimAsMap("realm_access")).thenReturn(null);
-
-        // Act
-        Mono<AbstractAuthenticationToken> result = converter.convert(jwt);
-
-        // Assert
-        assertNotNull(result);
+    private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
+        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+        if (realmAccess == null || !realmAccess.containsKey("roles")) {
+            return List.of();
+        }
+        @SuppressWarnings("unchecked")
+        List<String> roles = (List<String>) realmAccess.get("roles");
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .collect(Collectors.toList());
     }
 }

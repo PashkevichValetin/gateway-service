@@ -1,9 +1,6 @@
 package com.platform.gateway.config;
 
 import com.platform.gateway.filter.CorrelationIdFilter;
-import com.platform.gateway.filter.JwtAuthFilter;
-import com.platform.gateway.filter.LoggingFilter;
-import com.platform.gateway.filter.RateLimitingFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -18,10 +15,7 @@ import reactor.core.publisher.Mono;
 public class GatewayConfig {
 
     private final RedisRateLimiter redisRateLimiter;
-    private final JwtAuthFilter jwtAuthFilter;
-    private final LoggingFilter loggingFilter;
     private final CorrelationIdFilter correlationIdFilter;
-    private final RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
@@ -30,15 +24,18 @@ public class GatewayConfig {
                         .path("/api/v1/unifier/**")
                         .filters(f -> f
                                 .filter(correlationIdFilter.apply(new CorrelationIdFilter.Config()))
-                                .filter(loggingFilter.apply(new LoggingFilter.Config()))
-                                .filter(jwtAuthFilter.apply(new JwtAuthFilter.Config()))
-                                .filter(rateLimitingFilter.apply(new RateLimitingFilter.Config()))
                                 .circuitBreaker(config -> config
                                         .setName("dataUnifierCB")
                                         .setFallbackUri("forward:/fallback/unifier"))
                                 .retry(config -> config
                                         .setRetries(3)
                                         .setStatuses(HttpStatus.BAD_GATEWAY, HttpStatus.SERVICE_UNAVAILABLE))
+                                .requestRateLimiter(limiter -> limiter
+                                        .setRateLimiter(redisRateLimiter)
+                                        .setKeyResolver(exchange -> Mono.just(
+                                                exchange.getRequest().getRemoteAddress() != null ?
+                                                        exchange.getRequest().getRemoteAddress().getAddress().getHostAddress() :
+                                                        "unknown")))
                                 .stripPrefix(2)
                                 .addRequestHeader("X-Forwarded-By", "Gateway")
                                 .addResponseHeader("X-Gateway-Version", "1.0"))
@@ -47,35 +44,31 @@ public class GatewayConfig {
                         .path("/api/stocks/**")
                         .filters(f -> f
                                 .filter(correlationIdFilter.apply(new CorrelationIdFilter.Config()))
-                                .filter(loggingFilter.apply(new LoggingFilter.Config()))
-                                .filter(jwtAuthFilter.apply(new JwtAuthFilter.Config()))
                                 .circuitBreaker(config -> config
                                         .setName("stocksCB")
                                         .setFallbackUri("forward:/fallback/stocks"))
-                                .requestRateLimiter(config -> config
+                                .requestRateLimiter(limiter -> limiter
                                         .setRateLimiter(redisRateLimiter)
-                                        .setKeyResolver(exchange -> exchange.getRequest().getRemoteAddress() != null ?
-                                                Mono.just(exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()) :
-                                                Mono.just("unknown")))
+                                        .setKeyResolver(exchange -> Mono.just(
+                                                exchange.getRequest().getRemoteAddress() != null ?
+                                                        exchange.getRequest().getRemoteAddress().getAddress().getHostAddress() :
+                                                        "unknown")))
                                 .stripPrefix(1))
                         .uri("lb://reactor-adapter-service"))
                 .route("monitoring", r -> r
                         .path("/api/monitoring/**")
                         .filters(f -> f
                                 .filter(correlationIdFilter.apply(new CorrelationIdFilter.Config()))
-                                .filter(loggingFilter.apply(new LoggingFilter.Config()))
-                                .filter(jwtAuthFilter.apply(new JwtAuthFilter.Config()))
                                 .stripPrefix(1))
                         .uri("lb://monitoring-service"))
                 .route("public", r -> r
                         .path("/api/public/**", "/actuator/health", "/actuator/info")
                         .filters(f -> f
-                                .filter(correlationIdFilter.apply(new CorrelationIdFilter.Config()))
-                                .filter(loggingFilter.apply(new LoggingFilter.Config())))
-                        .uri("forward:/"))
+                                .filter(correlationIdFilter.apply(new CorrelationIdFilter.Config())))
+                        .uri("http://data-unifier:8081"))   // или другой сервис
                 .route("auth", r -> r
                         .path("/api/auth/**")
-                        .uri("lb://keycloak"))
+                        .uri("http://keycloak:8080"))
                 .build();
     }
 }

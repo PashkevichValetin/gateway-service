@@ -16,19 +16,15 @@ public class CorrelationIdFilter extends AbstractGatewayFilterFactory<Correlatio
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             String correlationId = exchange.getRequest().getHeaders().getFirst(CORRELATION_ID_HEADER);
-
             if (correlationId == null || correlationId.isEmpty()) {
                 correlationId = UUID.randomUUID().toString();
             }
-
             exchange = exchange.mutate()
                     .request(exchange.getRequest().mutate()
                             .header(CORRELATION_ID_HEADER, correlationId)
                             .build())
                     .build();
-
             exchange.getResponse().getHeaders().add(CORRELATION_ID_HEADER, correlationId);
-
             return chain.filter(exchange);
         };
     }

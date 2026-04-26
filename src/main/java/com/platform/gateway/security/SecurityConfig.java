@@ -1,25 +1,30 @@
-package com.platform.gateway.config;
+package com.platform.gateway.security;
 
 import com.platform.gateway.converter.KeycloakJwtAuthenticationConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.CorsWebFilter;
-
 import java.util.Arrays;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
+    private final KeycloakJwtAuthenticationConverter keycloakConverter;
+
+    public SecurityConfig(KeycloakJwtAuthenticationConverter keycloakConverter) {
+        this.keycloakConverter = keycloakConverter;
+    }
+
     @Bean
     public SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
         return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/actuator/health", "/actuator/info").permitAll()
                         .pathMatchers("/api/public/**").permitAll()
@@ -32,7 +37,9 @@ public class SecurityConfig {
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(new KeycloakJwtAuthenticationConverter())
+                                .jwtAuthenticationConverter(
+                                        new ReactiveJwtAuthenticationConverterAdapter(keycloakConverter)
+                                )
                         )
                 )
                 .build();
@@ -46,30 +53,6 @@ public class SecurityConfig {
         corsConfig.setAllowedHeaders(Arrays.asList("*"));
         corsConfig.setAllowCredentials(true);
         corsConfig.setMaxAge(3600L);
-
-        CorsConfigurationSource source = request -> corsConfig;
-        return new CorsWebFilter(source);
+        return new CorsWebFilter(request -> corsConfig);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
