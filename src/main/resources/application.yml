@@ -18,10 +18,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,gateway,info,metrics"
+        include: health, info, gateway, prometheus  # убедись, что prometheus тут есть
   endpoint:
-    gateway:
+    prometheus:
       enabled: true
-    health:
-      show-details: always
+
 
