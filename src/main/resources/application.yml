@@ -1,95 +1,27 @@
-server:
-  port: 8080
-
 spring:
-  application:
-    name: gateway
-
+  redis:
+    host: redis-cache
+    port: 6379
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      httpclient:
-        connect-timeout: 5000
-        response-timeout: 30s
-        pool:
-          type: elastic
-          max-idle-time: 60s
-          max-life-time: 120s
-      httpserver:
-        max-initial-line-length: 4096
-        max-header-size: 8192
-
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://keycloak:8080/realms/platform
-          jwk-set-uri: http://keycloak:8080/realms/platform/protocol/openid-connect/certs
-
-  redis:
-    host: redis
-    port: 6379
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
+      routes:
+        - id: monitor-route
+          uri: http://monitoring-service:8080
+          predicates:
+            - Path=/monitor/**
+        - id: data-route
+          uri: http://data-unifier-service:8080
+          predicates:
+            - Path=/data/**
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
-      base-path: /actuator
+        include: "health,gateway,info,metrics"
   endpoint:
+    gateway:
+      enabled: true
     health:
       show-details: always
-      show-components: always
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    tags:
-      application: gateway
 
-logging:
-  level:
-    com.platform.gateway: DEBUG
-    org.springframework.cloud.gateway: INFO
-    org.springframework.security: INFO
-    org.springframework.data.redis: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: /app/logs/gateway.log
-    max-size: 100MB
-    max-history: 10
-
-jwt:
-  expiration: 3600000
-  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGeneration2024}
-
-resilience4j:
-  circuitbreaker:
-    instances:
-      dataUnifierCB:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 3
-        automatic-transition-from-open-to-half-open-enabled: true
-      stocksCB:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 3
-  timelimiter:
-    instances:
-      dataUnifierCB:
-        timeout-duration: 10s
-      stocksCB:
-        timeout-duration: 5s
