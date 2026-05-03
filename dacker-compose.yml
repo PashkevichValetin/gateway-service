@@ -1,19 +1,22 @@
 gateway-service:
-  build: ./gateway
+  build:
+    context: ./gateway-service  # Убедись, что путь к папке верный (обычно ./gateway-service)
   container_name: gateway-service
   ports:
-    - "8080:8080" # Внешний порт для входа в систему
+    - "8088:8080" # Внешний порт 8088, внутренний 8080
   environment:
     - SPRING_PROFILES_ACTIVE=prod
-    # Настройки для Redis (если используешь лимитер запросов)
     - SPRING_REDIS_HOST=redis-cache
     - SPRING_REDIS_PORT=6379
-    # Прокидываем адреса сервисов для маршрутизации
     - MONITORING_SERVICE_URL=http://monitoring-service:8080
     - DATA_UNIFIER_SERVICE_URL=http://data-unifier-service:8080
     - REACTOR_ADAPTER_URL=http://reactor-adapter-service:8080
+    # Добавляем для безопасности, чтобы гейтвей знал, где проверять токены
+    - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak-auth:8080/realms/master
   depends_on:
     redis-cache:
+      condition: service_started
+    keycloak-auth:
       condition: service_started
   networks:
     - platform-net
