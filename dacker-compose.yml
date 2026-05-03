@@ -1,3 +1,20 @@
-gateway:
+gateway-service:
   build: ./gateway
-  container_name:
+  container_name: gateway-service
+  ports:
+    - "8080:8080" # Внешний порт для входа в систему
+  environment:
+    - SPRING_PROFILES_ACTIVE=prod
+    # Настройки для Redis (если используешь лимитер запросов)
+    - SPRING_REDIS_HOST=redis-cache
+    - SPRING_REDIS_PORT=6379
+    # Прокидываем адреса сервисов для маршрутизации
+    - MONITORING_SERVICE_URL=http://monitoring-service:8080
+    - DATA_UNIFIER_SERVICE_URL=http://data-unifier-service:8080
+    - REACTOR_ADAPTER_URL=http://reactor-adapter-service:8080
+  depends_on:
+    redis-cache:
+      condition: service_started
+  networks:
+    - platform-net
+  restart: unless-stopped

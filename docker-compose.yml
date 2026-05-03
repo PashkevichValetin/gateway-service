@@ -1,5 +1,5 @@
 services:
-  gateway:
+  gateway-service: # Имя сервиса для внутренней сети
     build:
       context: ./gateway-service
       dockerfile: Dockerfile
@@ -7,17 +7,22 @@ services:
     ports:
       - "8088:8080"
     depends_on:
-      redis:
+      redis-cache: # Исправлено: имя сервиса Redis из твоего docker ps
         condition: service_started
-      keycloak:
+      keycloak-auth: # Исправлено: имя сервиса Keycloak из твоего docker ps
         condition: service_started
     environment:
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/master
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_REDIS_HOST=redis-cache
+      - SPRING_REDIS_PORT=6379
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak-auth:8080/realms/master
+      # Прокидываем URL-ы микросервисов явно для надежности
+      - MONITORING_SERVICE_URL=http://monitoring-service:8080
+      - DATA_UNIFIER_SERVICE_URL=http://data-unifier-service:8080
     networks:
-#      - platform-net
+      - platform-net
+    restart: unless-stopped
 
-networks: # Не забудьте объявить сеть внизу, если она не внешняя
+networks:
   platform-net:
     driver: bridge
